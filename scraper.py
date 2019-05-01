@@ -36,7 +36,7 @@ def get_next_url(t_html):
         return None
     
 def url_from_word(name):
-    return "http://old.reddit.com"+name+"/top/?sort=top&t=all"
+    return "http://www.latin-dictionary.net/search/latin/"+name
 
 def get_html_from_url(url):
     raw_html = simple_get(url)
