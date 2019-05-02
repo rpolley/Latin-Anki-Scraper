@@ -28,23 +28,32 @@ def is_good_response(resp):
 def log_error(e):
     print(e)
 
-def get_definitions(t_html):
-    entries = list(t_html.select(".entry")
+class Entry():
+    def __init__(self, word, speech_part, grammar, definitions):
+        self.word = word
+        self.speech_part = speech_part
+        self.grammar = grammar
+        self.definitions = definitions
+
+def get_entries(t_html):
+    entries = list(t_html.select(".entry"))
     entries_parsed = []
     for entry in entries:
-        word = entry.select(".banner h3 a")[0].contents()
+        word = entry.select(".banner h3 a")[0].contents
+        print(word)
         grammatical_points = {}
         speech_part = entry.select(".speech")[0]
         grammars = entry.select(".grammar")
-        for g_item in grammars[0].children():
-            key = g_item.select(".name")[0].contents()
-            value = g_item.select(".value")[0].contents()
+        for g_item in grammars[0].children:
+            key = g_item.select(".name")[0].contents
+            value = g_item.select(".value")[0].contents
             gramatical_points[key] = value
-        definitions = entry.select(".definitions li")
+        definitions = list(entry.select(".definitions li"))
         definitions_parsed = []
         for definition in definitions:
-            definitions_parsed.append(definition.contents())
-        
+            definitions_parsed.append(definition.contents)
+        entries_parsed.append((word,speech_part,gramatical_points,definitions_parsed))
+    return entries_parsed
             
         
 def get_next_url(t_html):
@@ -110,3 +119,6 @@ def lookup_word(word):
     word_modern = roman_to_modern(word)
     url = url_from_word(word_modern)
     html = get_html_from_url(url)
+    return get_entries(html)
+
+print(lookup_word("amicus"))
