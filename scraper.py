@@ -28,6 +28,25 @@ def is_good_response(resp):
 def log_error(e):
     print(e)
 
+def get_definitions(t_html):
+    entries = list(t_html.select(".entry")
+    entries_parsed = []
+    for entry in entries:
+        word = entry.select(".banner h3 a")[0].contents()
+        grammatical_points = {}
+        speech_part = entry.select(".speech")[0]
+        grammars = entry.select(".grammar")
+        for g_item in grammars[0].children():
+            key = g_item.select(".name")[0].contents()
+            value = g_item.select(".value")[0].contents()
+            gramatical_points[key] = value
+        definitions = entry.select(".definitions li")
+        definitions_parsed = []
+        for definition in definitions:
+            definitions_parsed.append(definition.contents())
+        
+            
+        
 def get_next_url(t_html):
     buttons = list(t_html.select(".next-button a"))
     if(len(buttons)>0):
@@ -86,4 +105,8 @@ def roman_to_modern(text):
         if (not consonantal and curr == "v"):
             text[i] = "u"
     return "".join(text[1:-1])
-    
+
+def lookup_word(word):
+    word_modern = roman_to_modern(word)
+    url = url_from_word(word_modern)
+    html = get_html_from_url(url)
