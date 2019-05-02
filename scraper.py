@@ -34,25 +34,27 @@ class Entry():
         self.speech_part = speech_part
         self.grammar = grammar
         self.definitions = definitions
+    def __repr__(self):
+        return str(vars(self))
 
 def get_entries(t_html):
     entries = list(t_html.select(".entry"))
     entries_parsed = []
     for entry in entries:
-        word = entry.select(".banner h3 a")[0].contents
-        print(word)
+        word = entry.select(".banner h3 a")[0].get_text()
         grammatical_points = {}
-        speech_part = entry.select(".speech")[0]
-        grammars = entry.select(".grammar")
-        for g_item in grammars[0].children:
-            key = g_item.select(".name")[0].contents
-            value = g_item.select(".value")[0].contents
-            gramatical_points[key] = value
-        definitions = list(entry.select(".definitions li"))
+        speech_part = entry.select(".speech")[0].get_text()
+        grammars = entry.select(".grammar ul li")
+        if(len(grammars)>0):
+            for g_item in grammars:
+                key = g_item.select(".name")[0].get_text()
+                value = g_item.select(".value")[0].get_text()
+                grammatical_points[key] = value
+        definitions = list(entry.select(".definitions ol li"))
         definitions_parsed = []
         for definition in definitions:
-            definitions_parsed.append(definition.contents)
-        entries_parsed.append((word,speech_part,gramatical_points,definitions_parsed))
+            definitions_parsed.append(definition.get_text())
+        entries_parsed.append(Entry(word,speech_part,grammatical_points,definitions_parsed))
     return entries_parsed
             
         
@@ -65,7 +67,7 @@ def get_next_url(t_html):
         return None
     
 def url_from_word(name):
-    return "http://www.latin-dictionary.net/search/latin/"+name
+    return "http://latin-dictionary.net/search/latin/"+name
 
 def get_html_from_url(url):
     raw_html = simple_get(url)
@@ -82,7 +84,7 @@ def roman_to_modern(text):
     text = text.lower()
     #some word lists provide a declension number affixed to the word, remove that
     #since we're scraping the principle parts from the dictionary instead
-    text = parse("{word:l}{}",text)["word"]
+    text = parse("{word:l}{}",text+" ")["word"]
     #the romans used the letter v to write both u and v, but the dictionaries we're using dont
     #thankfully we can convert between the two based on some linquistic rules
     
@@ -121,4 +123,4 @@ def lookup_word(word):
     html = get_html_from_url(url)
     return get_entries(html)
 
-print(lookup_word("amicus"))
+print(lookup_word("cogito"))
