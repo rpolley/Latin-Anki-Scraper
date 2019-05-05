@@ -4,7 +4,56 @@ from contextlib import closing
 from bs4 import BeautifulSoup
 from time import sleep
 from os.path import isfile
-from parse import *
+from parse import parse
+from lib.genanki import *
+
+latin_noun = genanki.Model(
+    2011023118,
+    'Latin Noun',
+    fields = [
+        {'name': 'latin'},
+        {'name': 'english'},
+        {'name': 'gender'},
+        {'name': 'notes'}
+    ],
+    templates=[
+        {
+            'name': 'comprehension',
+            'qfmt': '{{latin}} {{gender}}.',
+            'afmt': '{{Frontside}}<br><hr id="answer">{{english}}<br>{{notes}}'
+        },
+        {
+            'name': 'production',
+            'qfmt': '{{english}}',
+            'afmt': '{{Frontside}}<br><hr id="answer">{{latin}} {{gender}}.<br>{{notes}}'
+        },
+        {
+            'name': 'gender',
+            'qfmt': 'what gender is {{latin}}',
+            'afmt': '{{Frontside}}<br><hr id="answer">{{gender}}.'
+        }
+    ])
+
+latin = genanki.Model(
+    1377365221,
+    'Latin',
+    fields = [
+        {'name': 'latin'},
+        {'name': 'english'},
+        {'name': 'notes'}
+    ],
+    templates=[
+        {
+            'name': 'comprehension',
+            'qfmt': '{{latin}}',
+            'afmt': '{{Frontside}}<br><hr id="answer">{{english}}<br>{{notes}}'
+        },
+        {
+            'name': 'production',
+            'qfmt': '{{english}}',
+            'afmt': '{{Frontside}}<br><hr id="answer">{{english}}<br>{{notes}}'
+        }
+    ])
 
 def simple_get(url):
     try:
@@ -76,6 +125,33 @@ def get_html_from_url(url):
     tree_html = BeautifulSoup(raw_html, 'html.parser')
     return tree_html
     
+def generate_deck(name,entries):
+    global latin
+    global latin_noun
+    
+    deck_id = random.randrange(1<<30,1<<31)
+    deck = genanki.Deck(deck_id,name)
+    
+    for entry in entries:
+        model = latin
+        fields = [entry.noun, "; ".join(entry.definitions)]
+        if(entry.speech_part == 'noun'):
+            model = latin_noun
+            gender_long = entry.grammar['gender']
+            gender = ""
+            if(gender_long == "masculine"):
+                gender = "m"
+            elif(gender_long == "feminine"):
+                gender = "f"
+            elif(gender_long == "neuter"):
+                gender = "n"
+            fields.append(gender)
+        fields.append("") #todo: format grammar into 
+        note = genanki.Note(model=model,fields=fields)
+        deck.add_note(note)
+    return deck
+        
+    
 """
 convert ancient roman style latin text to modern style latin text
 """
@@ -123,4 +199,5 @@ def lookup_word(word):
     html = get_html_from_url(url)
     return get_entries(html)
 
-print(lookup_word("cogito"))
+
+print(lookup_word("AMICVS"))
