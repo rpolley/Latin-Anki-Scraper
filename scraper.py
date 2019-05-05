@@ -193,6 +193,14 @@ def roman_to_modern(text):
             text[i] = "u"
     return "".join(text[1:-1])
 
+def generate_deck(name, word_list):
+    entries = []
+    for word in word_list:
+        word_entries = lookup_word(word)
+        entries.extend(word_entries)
+    return generate_deck(name, entries)
+        
+
 def lookup_word(word):
     word_modern = roman_to_modern(word)
     url = url_from_word(word_modern)
