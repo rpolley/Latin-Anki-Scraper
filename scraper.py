@@ -6,8 +6,9 @@ from time import sleep
 from os.path import isfile
 from parse import parse
 from lib.genanki import *
+import random
 
-latin_noun = genanki.Model(
+latin_noun = Model(
     2011023118,
     'Latin Noun',
     fields = [
@@ -34,7 +35,7 @@ latin_noun = genanki.Model(
         }
     ])
 
-latin = genanki.Model(
+latin = Model(
     1377365221,
     'Latin',
     fields = [
@@ -86,11 +87,14 @@ class Entry():
     def __repr__(self):
         return str(vars(self))
 
-def get_entries(t_html):
+def get_entries(target,t_html):
     entries = list(t_html.select(".entry"))
     entries_parsed = []
     for entry in entries:
         word = entry.select(".banner h3 a")[0].get_text()
+        principle_parts = word.split(", ")
+        if(target not in principle_parts):
+            continue
         grammatical_points = {}
         speech_part = entry.select(".speech")[0].get_text()
         grammars = entry.select(".grammar ul li")
@@ -130,24 +134,26 @@ def generate_deck(name,entries):
     global latin_noun
     
     deck_id = random.randrange(1<<30,1<<31)
-    deck = genanki.Deck(deck_id,name)
+    deck = Deck(deck_id,name)
     
     for entry in entries:
         model = latin
-        fields = [entry.noun, "; ".join(entry.definitions)]
+        fields = [entry.word, "; ".join(entry.definitions)]
+        print((entry.word,entry.grammar))
         if(entry.speech_part == 'noun'):
             model = latin_noun
-            gender_long = entry.grammar['gender']
-            gender = ""
-            if(gender_long == "masculine"):
-                gender = "m"
-            elif(gender_long == "feminine"):
-                gender = "f"
-            elif(gender_long == "neuter"):
-                gender = "n"
-            fields.append(gender)
+            if('gender' in entry.grammar.keys()):
+                gender_long = entry.grammar['gender']
+                gender = ""
+                if(gender_long == "masculine"):
+                    gender = "m"
+                elif(gender_long == "feminine"):
+                    gender = "f"
+                elif(gender_long == "neuter"):
+                    gender = "n"
+                fields.append(gender)
         fields.append("") #todo: format grammar into 
-        note = genanki.Note(model=model,fields=fields)
+        note = Note(model=model,fields=fields)
         deck.add_note(note)
     return deck
         
@@ -174,11 +180,12 @@ def roman_to_modern(text):
         next = text[i+1]
         consonantal = False
         
+        print((prev,curr,next))
         if(prev == "#" and next in vowels): # #_V
             consonantal = True
         elif(prev in vowels and not next not in vowels): # V_V, V_#
             consonantal = True
-        elif(prev not in vowels and prev != "#" and next == "#"): # C_#
+        elif(prev not in vowels and prev != "#" and next in vowels): # C_V
             consonantal = True
         
         if(curr == "u" and prev == "q" or prev == "c"):
@@ -193,7 +200,7 @@ def roman_to_modern(text):
             text[i] = "u"
     return "".join(text[1:-1])
 
-def generate_deck(name, word_list):
+def generate_deck_from_words(name, word_list):
     entries = []
     for word in word_list:
         word_entries = lookup_word(word)
@@ -203,9 +210,11 @@ def generate_deck(name, word_list):
 
 def lookup_word(word):
     word_modern = roman_to_modern(word)
+    print(word_modern)
     url = url_from_word(word_modern)
     html = get_html_from_url(url)
-    return get_entries(html)
+    return get_entries(word_modern,html)
 
 
-print(lookup_word("AMICVS"))
+d = generate_deck_from_words("test",["AMICVS","IVS","CONIVRAVI"])
+print(d)
