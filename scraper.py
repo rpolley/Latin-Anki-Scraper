@@ -55,7 +55,7 @@ latin = Model(
         {
             'name': 'production',
             'qfmt': '{{english}}',
-            'afmt': '{{english}}<br><hr id="answer">{{english}}<br>{{notes}}'
+            'afmt': '{{english}}<br><hr id="answer">{{latin}}<br>{{notes}}'
         }
     ])
 
