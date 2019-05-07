@@ -9,6 +9,7 @@ from lib.genanki import *
 import random
 import csv
 import argparse
+from sys import argv
 
 latin_noun = Model(
     2011023118,
@@ -141,7 +142,6 @@ def generate_deck(name,entries):
     for entry in entries:
         model = latin
         fields = [entry.word, "; ".join(entry.definitions)]
-        print((entry.word,entry.grammar))
         if(entry.speech_part == 'noun'):
             model = latin_noun
             if('gender' in entry.grammar.keys()):
@@ -265,4 +265,14 @@ def deck_file_from_csv(words_csv, target_file, name=None, data_indices=[0], data
     deck = deck_from_words(name,wordlist)
     Package(deck).write_to_file(target_file)
 
-deck_file_from_csv("wordlist.csv","gallic war.apkg",name="Gallic War Noncore Vocabulary", data_indices=[1])
+parser = argparse.ArgumentParser(description="Build and Anki Deck from a csv wordlist", prog="PROG")
+parser.add_argument('infile', metavar='INFILE')
+parser.add_argument('outfile', metavar='OUTFILE')
+parser.add_argument('--format','-f', choices=["column_major","row_major"],default="column_major")
+parser.add_argument('--indices', '-i', type=int,default=[0], nargs='*')
+parser.add_argument('--start', '-s', default=1,type=int, nargs=1)
+parser.add_argument('--name', '-n', nargs=1)
+
+args = parser.parse_args(argv[1:])
+
+deck_file_from_csv(args.infile,args.outfile,name=args.name[0], data_indices=args.indices,data_start_index=args.start,data_format=args.format)
