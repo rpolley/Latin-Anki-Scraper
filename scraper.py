@@ -7,6 +7,8 @@ from os.path import isfile
 from parse import parse
 from lib.genanki import *
 import random
+import csv
+import argparse
 
 latin_noun = Model(
     2011023118,
@@ -21,17 +23,17 @@ latin_noun = Model(
         {
             'name': 'comprehension',
             'qfmt': '{{latin}} {{gender}}.',
-            'afmt': '{{Frontside}}<br><hr id="answer">{{english}}<br>{{notes}}'
+            'afmt': '{{latin}} {{gender}}.<br><hr id="answer">{{english}}<br>{{notes}}'
         },
         {
             'name': 'production',
             'qfmt': '{{english}}',
-            'afmt': '{{Frontside}}<br><hr id="answer">{{latin}} {{gender}}.<br>{{notes}}'
+            'afmt': '{{english}}<br><hr id="answer">{{latin}} {{gender}}.<br>{{notes}}'
         },
         {
             'name': 'gender',
             'qfmt': 'what gender is {{latin}}',
-            'afmt': '{{Frontside}}<br><hr id="answer">{{gender}}.'
+            'afmt': 'what gender is {{latin}}<br><hr id="answer">{{gender}}.'
         }
     ])
 
@@ -47,12 +49,12 @@ latin = Model(
         {
             'name': 'comprehension',
             'qfmt': '{{latin}}',
-            'afmt': '{{Frontside}}<br><hr id="answer">{{english}}<br>{{notes}}'
+            'afmt': '{{latin}}<br><hr id="answer">{{english}}<br>{{notes}}'
         },
         {
             'name': 'production',
             'qfmt': '{{english}}',
-            'afmt': '{{Frontside}}<br><hr id="answer">{{english}}<br>{{notes}}'
+            'afmt': '{{english}}<br><hr id="answer">{{english}}<br>{{notes}}'
         }
     ])
 
@@ -179,28 +181,47 @@ def roman_to_modern(text):
         curr = text[i]
         next = text[i+1]
         consonantal = False
+        ambiguous = False        
         
-        print((prev,curr,next))
-        if(prev == "#" and next in vowels): # #_V
-            consonantal = True
-        elif(prev in vowels and not next not in vowels): # V_V, V_#
-            consonantal = True
-        elif(prev not in vowels and prev != "#" and next in vowels): # C_V
-            consonantal = True
-        
-        if(curr == "u" and prev == "q" or prev == "c"):
-            consonantal = False
+        if(len(prev)>1):
+            ambiguous = True
+        else:
+            if(prev == "#" and next in vowels): # #_V
+                consonantal = True
+            elif(prev in vowels and not next not in vowels): # V_V, V_#
+                consonantal = True
+            elif(prev not in vowels and prev != "#" and next in vowels): # C_V
+                 ambiguous = True
+            
         
         #sometimes i's are consonants, but they follow the same rules, so replace them with j
-        if (consonantal and curr == "i"):
-            text[i] = "j"
+        if(curr == "i"):
+            if(ambiguous):
+                text[i] = ("i","j")
+            elif (consonantal):
+                text[i] = "j"
+            
         
         #replace the v's with u's
-        if (not consonantal and curr == "v"):
-            text[i] = "u"
-    return "".join(text[1:-1])
+        if(curr == "v"):
+            if(ambiguous):
+                text[i] = ("v","u")
+            elif (not consonantal):
+                text[i] = "u"
+            
+    return enumerate_ambiguities(text[1:-1])
+    
+def enumerate_ambiguities(text):
+    l = [""]
+    for i in range(len(text)):
+        ln = []
+        for word in l:
+            for item in list(text[i]):
+                ln.append(word+item)
+        l = ln
+    return l
 
-def generate_deck_from_words(name, word_list):
+def deck_from_words(name, word_list):
     entries = []
     for word in word_list:
         word_entries = lookup_word(word)
@@ -209,12 +230,39 @@ def generate_deck_from_words(name, word_list):
         
 
 def lookup_word(word):
-    word_modern = roman_to_modern(word)
-    print(word_modern)
-    url = url_from_word(word_modern)
-    html = get_html_from_url(url)
-    return get_entries(word_modern,html)
+    words_modern = roman_to_modern(word)
+    entries = []
+    
+    print(words_modern)
+    for word_modern in words_modern:
+        url = url_from_word(word_modern)
+        html = get_html_from_url(url)
+        entries.extend(get_entries(word_modern,html))
+    return entries
 
+def deck_file_from_csv(words_csv, target_file, name=None, data_indices=[0], data_format="column_major", data_start_index=1):
+    wordlist = []
+    with open(words_csv, newline="") as csvfile:
+        dialect = csv.Sniffer().sniff(csvfile.read(1024)) #attempt to guess the format of the file
+        csvfile.seek(0)
+        csvreader = csv.reader(csvfile, dialect)
+        if(data_format == "column_major"):
+            i = 0
+            for row in csvreader:
+                if(i>=data_start_index):
+                    for j in data_indices:
+                        wordlist.append(row[j])
+                i += 1
+        elif(data_format == "row_major"):
+            i = 0
+            for row in csvreader:
+                if i in data_indices:
+                    for word in row[data_start_index:]:
+                        wordlist.append(word)
+                i += 1
+    if(not name):
+        name=words_csv.split(".")[0]
+    deck = deck_from_words(name,wordlist)
+    Package(deck).write_to_file(target_file)
 
-d = generate_deck_from_words("test",["AMICVS","IVS","CONIVRAVI"])
-print(d)
+deck_file_from_csv("wordlist.csv","gallic war.apkg",name="Gallic War Noncore Vocabulary", data_indices=[1])
