@@ -89,6 +89,25 @@ class Entry():
         self.definitions = definitions
     def __repr__(self):
         return str(vars(self))
+        
+    def merge(self, other):
+        self.definitions.extend(other.definitions)
+    
+    def equals(self, other):
+        return self.word == other.word and self.speech_part == other.speech_part
+               
+def merge_duplicate_entries(entries):
+    entries_new = []
+    i = 0
+    while i < len(entries):
+        entry_new = entries[i]
+        for j in range(i+1,len(entries)):
+            if(entry_new.equals(entries[j])):
+                entry_new.merge(entries[j])
+                i += 1
+        i += 1
+        entries_new.append(entry_new)
+    return entries_new
 
 def get_entries(target,t_html):
     entries = list(t_html.select(".entry"))
@@ -111,7 +130,7 @@ def get_entries(target,t_html):
         for definition in definitions:
             definitions_parsed.append(definition.get_text())
         entries_parsed.append(Entry(word,speech_part,grammatical_points,definitions_parsed))
-    return entries_parsed
+    return merge_duplicate_entries(entries_parsed)
             
         
 def get_next_url(t_html):
@@ -232,8 +251,6 @@ def deck_from_words(name, word_list):
 def lookup_word(word):
     words_modern = roman_to_modern(word)
     entries = []
-    
-    print(words_modern)
     for word_modern in words_modern:
         url = url_from_word(word_modern)
         html = get_html_from_url(url)
