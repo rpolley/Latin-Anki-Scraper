@@ -38,6 +38,29 @@ latin_noun = Model(
         }
     ])
 
+latin_noun_no_gender_memorization = Model(
+    1562407055,
+    'Latin Noun (no gender card)',
+    fields = [
+        {'name': 'latin'},
+        {'name': 'english'},
+        {'name': 'gender'},
+        {'name': 'notes'}
+    ],
+    templates=[
+        {
+            'name': 'comprehension',
+            'qfmt': '{{latin}} {{gender}}.',
+            'afmt': '{{latin}} {{gender}}.<br><hr id="answer">{{english}}<br>{{notes}}'
+        },
+        {
+            'name': 'production',
+            'qfmt': '{{english}}',
+            'afmt': '{{english}}<br><hr id="answer">{{latin}} {{gender}}.<br>{{notes}}'
+        }
+    ])
+
+
 latin = Model(
     1377365221,
     'Latin',
@@ -163,6 +186,11 @@ def generate_deck(name,entries):
         fields = [entry.word, "; ".join(entry.definitions)]
         if(entry.speech_part == 'noun'):
             model = latin_noun
+            declension = None
+            if('declension' in entry.grammar.keys()):
+                declension_text = grammar['declension']
+                declension = int(declension_text[0])
+                
             if('gender' in entry.grammar.keys()):
                 gender_long = entry.grammar['gender']
                 gender = ""
@@ -172,7 +200,19 @@ def generate_deck(name,entries):
                     gender = "f"
                 elif(gender_long == "neuter"):
                     gender = "n"
-                fields.append(gender)
+                else:
+                    gender = "m/f/n"
+                    model = latin_noun_no_gender_memorization
+                """first declension nouns are normally feminine
+                and second declension are nomally masculine or neuter
+                and you can tell the difference between them
+                by the form of the nominative
+                but sometimes one we'd expect to be feminine is masculine
+                (neuters are completely predictable in the 2nd declension
+                and visa-versa, so only generate a gender card if that's the case"""
+                if((declension = 1 and gender == "m")
+                 or (declension = 2 and gender == "f")):
+                    model = latin_noun_no_gender_memorization
         fields.append("") #todo: format grammar into 
         note = Note(model=model,fields=fields)
         deck.add_note(note)
